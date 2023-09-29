@@ -1,0 +1,2 @@
+[functions.flip-webhook]
+verify_jwt = false
