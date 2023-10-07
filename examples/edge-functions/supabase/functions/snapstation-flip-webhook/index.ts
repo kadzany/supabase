@@ -49,8 +49,40 @@ serve(async (req) => {
           NOW()
         ) 
       RETURNING *`,
-      [data.id, data.bill_link_id, data.status]
+      [
+        data.id,
+        data.bill_link_id,
+        data.status
+      ])
+
+    // Update transaction based on the bill payment id
+    const resTransaction = await connection.queryObject(
+      `SELECT * 
+          FROM public.ss_transactions
+          WHERE flip_bill_payment_id = $1
+          LIMIT 1`,
+      [
+        data.id
+      ]
     )
+
+    if (resTransaction.rows.length > 0) {
+      const resTrxUpdate = await connection.queryObject(
+        `UPDATE 
+            public.ss_transactions 
+            SET
+              flip_payment_status = $1,
+              flip_webhook_call_id = $2,
+              is_payment_successful = $3
+            WHERE transaction_id = $4`,
+        [
+          data.status,
+          rows[0].id,
+          data.status == "SUCCESSFUL" ? true : false,
+          resTransaction.rows[0].transaction_id
+        ]
+      )
+    }
 
     return new Response(
       JSON.stringify(data),
